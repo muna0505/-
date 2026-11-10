@@ -1,0 +1,377 @@
+DROP DATABASE IF EXISTS vet_clinic;
+CREATE DATABASE vet_clinic CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE vet_clinic;
+
+1. Справочник видов животных
+CREATE TABLE Species (
+    species_id INT AUTO_INCREMENT PRIMARY KEY,
+    species_name VARCHAR(50) NOT NULL
+);
+2. Справочник пород
+CREATE TABLE Breeds (
+    breed_id INT AUTO_INCREMENT PRIMARY KEY,
+    breed_name VARCHAR(100) NOT NULL,
+    species_id INT NOT NULL,
+    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES Species(species_id) ON DELETE CASCADE
+);
+3. Владельцы животных
+CREATE TABLE Owners (
+    owner_id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    address VARCHAR(255) NOT NULL
+);
+4. Животные
+CREATE TABLE Animals (
+    animal_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    species_id INT NOT NULL,
+    breed_id INT,
+    birth_date DATE NOT NULL,
+    gender CHAR(1) NOT NULL CHECK (gender IN ('М', 'Ж')),
+    color VARCHAR(50),
+    chip_number VARCHAR(30) UNIQUE,
+    owner_id INT NOT NULL,
+    CONSTRAINT fk_animals_species FOREIGN KEY (species_id) REFERENCES Species(species_id),
+    CONSTRAINT fk_animals_breeds FOREIGN KEY (breed_id) REFERENCES Breeds(breed_id),
+    CONSTRAINT fk_animals_owners FOREIGN KEY (owner_id) REFERENCES Owners(owner_id) ON DELETE CASCADE
+);
+5. Ветеринарные врачи
+CREATE TABLE Vets (
+    vet_id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    specialization VARCHAR(100) NOT NULL
+);
+6. Приёмы животных
+CREATE TABLE Appointments (
+    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
+    appointment_datetime DATETIME NOT NULL,
+    animal_id INT NOT NULL,
+    vet_id INT NOT NULL,
+    complaints TEXT,
+    diagnosis TEXT NOT NULL,
+    treatment TEXT,
+    CONSTRAINT fk_appointments_animals FOREIGN KEY (animal_id) REFERENCES Animals(animal_id) ON DELETE CASCADE,
+    CONSTRAINT fk_appointments_vets FOREIGN KEY (vet_id) REFERENCES Vets(vet_id)
+);
+7. Справочник групп препаратов
+CREATE TABLE Medication_Groups (
+    group_id INT AUTO_INCREMENT PRIMARY KEY,
+    group_name VARCHAR(100) NOT NULL
+);
+8. Справочник стран
+CREATE TABLE Countries (
+    country_id INT AUTO_INCREMENT PRIMARY KEY,
+    country_name VARCHAR(100) NOT NULL
+);
+9. Лекарственные препараты
+CREATE TABLE Medications (
+    medication_id INT AUTO_INCREMENT PRIMARY KEY,
+    medication_name VARCHAR(150) NOT NULL,
+    form VARCHAR(50) NOT NULL,
+    dosage VARCHAR(50) NOT NULL,
+    group_id INT NOT NULL,
+    country_id INT NOT NULL,
+    CONSTRAINT fk_medications_groups FOREIGN KEY (group_id) REFERENCES Medication_Groups(group_id),
+    CONSTRAINT fk_medications_countries FOREIGN KEY (country_id) REFERENCES Countries(country_id)
+);
+10. Назначения (связующая таблица)
+CREATE TABLE Prescriptions (
+    appointment_id INT NOT NULL,
+    medication_id INT NOT NULL,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
+    PRIMARY KEY (appointment_id, medication_id),
+    CONSTRAINT fk_prescriptions_appointments FOREIGN KEY (appointment_id) REFERENCES Appointments(appointment_id) ON DELETE CASCADE,
+    CONSTRAINT fk_prescriptions_medications FOREIGN KEY (medication_id) REFERENCES Medications(medication_id)
+);
+
+ALTER TABLE Owners ADD COLUMN email VARCHAR(100);
+ALTER TABLE Owners ADD CONSTRAINT uq_owners_email UNIQUE (email);
+
+Таблица 1: Виды (Species)
+INSERT INTO Species (species_id, species_name) VALUES 
+(1, 'Собака'), (2, 'Кошка'), (3, 'Птица'), (4, 'Грызун'), (5, 'Рептилия'), 
+(6, 'Рыба'), (7, 'Кролик'), (8, 'Хорёк'), (9, 'Лошадь'), (10, 'Черепаха');
+Таблица 2: Породы (Breeds)
+INSERT INTO Breeds (breed_id, breed_name, species_id) VALUES 
+(1, 'Лабрадор', 1), (2, 'Овчарка', 1), (3, 'Британская короткошёрстная', 2), 
+(4, 'Персидская', 2), (5, 'Волнистый попугай', 3), (6, 'Хомяк джунгарский', 4), 
+(7, 'Игуана зелёная', 5), (8, 'Гуппи', 6), (9, 'Кролик карликовый', 7), (10, 'Пони', 9);
+Таблица 3: Владельцы (Owners)
+INSERT INTO Owners (owner_id, full_name, phone, address, email) VALUES 
+(1, 'Иванов Иван Иванович', '(999) 111-1111', 'г. Москва, ул. Ленина, д. 1', 'ivanov@mail.ru'),
+(2, 'Петрова Анна Сергеевна', '(999) 222-2222', 'г. Москва, ул. Гагарина, д. 5', 'petrova@mail.ru'),
+(3, 'Сидоров Петр Алексеевич', '(999) 333-3333', 'г. Химки, ул. Мира, д. 8', 'sidorov@mail.ru'),
+(4, 'Кузнецова Мария Ивановна', '(999) 444-4444', 'г. Мытищи, ул. Садовая, д. 12', 'kuznetsova@mail.ru'),
+(5, 'Смирнов Алексей Петрович', '(999) 555-5555', 'г. Москва, ул. Тверская, д. 3', 'smirnov@mail.ru'),
+(6, 'Попова Ольга Сергеевна', '(999) 666-6666', 'г. Москва, ул. Арбат, д. 15', 'popova@mail.ru'),
+(7, 'Васильев Дмитрий Андреевич', '(999) 777-7777', 'г. Одинцово, ул. Полевая, д. 7', 'vasiliev@mail.ru'),
+(8, 'Соколова Елена Викторовна', '(999) 888-8888', 'г. Москва, ул. Пушкина, д. 20', 'sokolova@mail.ru'),
+(9, 'Михайлов Сергей Николаевич', '(999) 999-9999', 'г. Красногорск, ул. Лесная, д. 2', 'mikhailov@mail.ru'),
+(10, 'Новикова Татьяна Юрьевна', '(999) 000-0000', 'г. Москва, ул. Чехова, д. 11', 'novikova@mail.ru');
+
+Таблица 4: Животные (Animals)
+INSERT INTO Animals (animal_id, name, species_id, breed_id, birth_date, gender, color, chip_number, owner_id) VALUES 
+(1, 'Рекс', 1, 1, '2020-03-15', 'М', 'Палевый', '6430000001', 1),
+(2, 'Мурка', 2, 3, '2019-07-10', 'Ж', 'Серый', '6430000002', 2),
+(3, 'Кеша', 3, 5, '2021-01-01', 'М', 'Зелёный', NULL, 3),
+(4, 'Хома', 4, 6, '2022-05-20', 'М', 'Рыжий', NULL, 4),
+(5, 'Гоша', 5, 7, '2018-11-12', 'М', 'Зелёный', '6430000005', 5),
+(6, 'Бублик', 6, 8, '2023-02-14', 'М', 'Оранжевый', NULL, 6),
+(7, 'Снежок', 7, 9, '2021-08-30', 'Ж', 'Белый', '6430000007', 7),
+(8, 'Фрося', 8, NULL, '2022-12-05', 'Ж', 'Соболиный', NULL, 8),
+(9, 'Багира', 2, 4, '2020-10-10', 'Ж', 'Чёрный', '6430000009', 9),
+(10, 'Симба', 1, 2, '2019-04-25', 'М', 'Рыжий', '6430000010', 10);
+Таблица 5: Врачи (Vets)
+INSERT INTO Vets (vet_id, full_name, specialization) VALUES 
+(1, 'Смирнов Алексей Петрович', 'Терапевт'),
+(2, 'Козлова Мария Ивановна', 'Хирург'),
+(3, 'Новиков Дмитрий Сергеевич', 'Офтальмолог'),
+(4, 'Иванова Елена Викторовна', 'Стоматолог'),
+(5, 'Петров Игорь Олегович', 'Дерматолог'),
+(6, 'Сидорова Анна Павловна', 'Кардиолог'),
+(7, 'Орлов Максим Андреевич', 'Невролог'),
+(8, 'Зайцева Ольга Игоревна', 'Онколог'),
+(9, 'Егоров Павел Сергеевич', 'Ортопед'),
+(10, 'Павлова Ирина Алексеевна', 'Терапевт');
+Таблица 6: Приёмы (Appointments)
+INSERT INTO Appointments (appointment_id, appointment_datetime, animal_id, vet_id, complaints, diagnosis, treatment) VALUES 
+(1, '2026-10-01 10:00:00', 1, 1, 'Вялость, отказ от еды', 'Гастрит', 'Диета, Амоксициллин'),
+(2, '2026-10-01 11:30:00', 2, 2, 'Хромота', 'Ушиб лапы', 'Покой, обезболивающее'),
+(3, '2026-10-02 09:15:00', 3, 3, 'Слезотечение', 'Конъюнктивит', 'Капли для глаз'),
+(4, '2026-10-02 14:00:00', 4, 4, 'Проблемы с зубами', 'Кариес', 'Удаление зуба'),
+(5, '2026-10-03 10:30:00', 5, 5, 'Выпадение чешуи', 'Авитаминоз', 'Витамины, ультрафиолет'),
+(6, '2026-10-03 16:45:00', 6, 6, 'Опухший живот', 'Водянка', 'Мочегонное, диета'),
+(7, '2026-10-04 12:00:00', 7, 7, 'Судороги', 'Эпилепсия', 'Противосудорожное'),
+(8, '2026-10-04 15:20:00', 8, 8, 'Уплотнение на боку', 'Новообразование', 'Биопсия, операция'),
+(9, '2026-10-05 09:00:00', 9, 9, 'Хромота на заднюю лапу', 'Артрит', 'Хондропротекторы'),
+(10, '2026-10-05 11:00:00', 10, 10, 'Кашель', 'Бронхит', 'Антибиотики, ингаляции');
+Таблица 7: Группы препаратов (Medication_Groups)
+INSERT INTO Medication_Groups (group_id, group_name) VALUES 
+(1, 'Антибиотики'), (2, 'Витамины'), (3, 'Противовоспалительные'), 
+(4, 'Обезболивающие'), (5, 'Антигистаминные'), (6, 'Кардиологические'), 
+(7, 'Гастроэнтерологические'), (8, 'Успокоительные'), (9, 'Антисептики'), (10, 'Противопаразитарные');
+Таблица 8: Страны (Countries)
+INSERT INTO Countries (country_id, country_name) VALUES 
+(1, 'Россия'), (2, 'Германия'), (3, 'Франция'), (4, 'Индия'), (5, 'США'), 
+(6, 'Китай'), (7, 'Швейцария'), (8, 'Япония'), (9, 'Италия'), (10, 'Великобритания');
+Таблица 9: Препараты (Medications)
+INSERT INTO Medications (medication_id, medication_name, form, dosage, group_id, country_id) VALUES 
+(1, 'Амоксициллин', 'Таблетки', '250 мг', 1, 1),
+(2, 'Витамин B12', 'Раствор', '500 мкг/мл', 2, 2),
+(3, 'Ибупрофен', 'Суспензия', '100 мг/5 мл', 3, 3),
+(4, 'Анальгин', 'Раствор', '50%', 4, 1),
+(5, 'Супрастин', 'Таблетки', '25 мг', 5, 4),
+(6, 'Валидол', 'Капсулы', '60 мг', 6, 1),
+(7, 'Омез', 'Капсулы', '20 мг', 7, 4),
+(8, 'Феназепам', 'Таблетки', '1 мг', 8, 1),
+(9, 'Хлоргексидин', 'Раствор', '0.05%', 9, 10),
+(10, 'Мильбемакс', 'Таблетки', '2.5 мг', 10, 3);
+Таблица 10: Назначения (Prescriptions)
+INSERT INTO Prescriptions (appointment_id, medication_id, quantity, price) VALUES 
+(1, 1, 2, 350.00),
+(2, 3, 1, 420.50),
+(3, 9, 1, 120.00),
+(4, 4, 5, 50.00),
+(5, 2, 3, 180.00),
+(6, 7, 2, 600.00),
+(7, 8, 1, 250.00),
+(8, 5, 2, 150.00),
+(9, 3, 1, 420.50),
+(10, 1, 1, 350.00);
+
+Поменялся телефон владельца Иванова (owner_id = 1)
+UPDATE Owners 
+SET phone = '(999) 123-4567' 
+WHERE owner_id = 1;
+Уточнение диагноза на первом приёме (appointment_id = 1)
+UPDATE Appointments 
+SET diagnosis = 'Хронический гастрит' 
+WHERE appointment_id = 1;
+Повышение дозировки Амоксициллина (medication_id = 1)
+UPDATE Medications 
+SET dosage = '500 мг' 
+WHERE medication_id = 1;
+
+Удаление назначений препарата на 10-м приёме
+DELETE FROM Prescriptions 
+WHERE appointment_id = 10 AND medication_id = 1;
+Удаление животного (Черепаху, animal_id = 10). 
+DELETE FROM Animals 
+WHERE animal_id = 10;
+
+1. Администратор (полный доступ)
+CREATE USER 'admin_user'@'localhost' IDENTIFIED BY 'admin_pass';
+GRANT ALL PRIVILEGES ON vet_clinic.* TO 'admin_user'@'localhost';
+2. Ветеринарный врач
+CREATE USER 'vet_user'@'localhost' IDENTIFIED BY 'vet_pass';
+GRANT SELECT ON vet_clinic.Animals TO 'vet_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vet_clinic.Appointments TO 'vet_user'@'localhost';
+GRANT SELECT, INSERT ON vet_clinic.Prescriptions TO 'vet_user'@'localhost';
+GRANT SELECT ON vet_clinic.Medications TO 'vet_user'@'localhost';
+3. Регистратор
+CREATE USER 'reg_user'@'localhost' IDENTIFIED BY 'reg_pass';
+GRANT SELECT, INSERT, UPDATE ON vet_clinic.Owners TO 'reg_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vet_clinic.Animals TO 'reg_user'@'localhost';
+GRANT SELECT, INSERT ON vet_clinic.Appointments TO 'reg_user'@'localhost';
+4. Менеджер по закупкам
+CREATE USER 'manager_user'@'localhost' IDENTIFIED BY 'manager_pass';
+GRANT SELECT, INSERT, UPDATE ON vet_clinic.Medications TO 'manager_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vet_clinic.Medication_Groups TO 'manager_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vet_clinic.Countries TO 'manager_user'@'localhost';
+
+FLUSH PRIVILEGES;
+
+Вывод структуры всех таблиц
+DESCRIBE Species;	
+DESCRIBE Breeds;
+DESCRIBE Owners;
+DESCRIBE Animals;
+DESCRIBE Vets;
+DESCRIBE Appointments;
+DESCRIBE Medication_Groups;
+DESCRIBE Countries;
+DESCRIBE Medications;
+DESCRIBE Prescriptions;
+
+1. Where/Order by
+SELECT 
+    a.name AS Кличка, 
+    s.species_name AS Вид, 
+    b.breed_name AS Порода, 
+    o.full_name AS Владелец
+FROM Animals a, Species s, Owners o, Breeds b
+WHERE a.species_id = s.species_id 
+  AND a.owner_id = o.owner_id 
+  AND a.breed_id = b.breed_id
+ORDER BY o.full_name ASC;
+2. Join
+SELECT 
+    ap.appointment_datetime AS Дата_приема, 
+    an.name AS Животное, 
+    v.full_name AS Врач, 
+    ap.diagnosis AS Диагноз
+FROM Appointments ap
+INNER JOIN Animals an ON ap.animal_id = an.animal_id
+INNER JOIN Vets v ON ap.vet_id = v.vet_id
+ORDER BY ap.appointment_datetime DESC;
+3. SUM, AVG, COUNT, MAX, MIN
+SELECT 
+    COUNT(*) AS Всего_назначений,        
+    SUM(quantity) AS Всего_упаковок,     
+    AVG(price) AS Средняя_цена,          
+    MAX(price) AS Максимальная_цена,     
+    MIN(price) AS Минимальная_цена       
+FROM Prescriptions;
+4. Group by/ having
+SELECT 
+    v.full_name AS Врач,
+    COUNT(ap.appointment_id) AS Количество_приемов,
+    SUM(pr.price * pr.quantity) AS Общая_сумма_назначений
+FROM Vets v
+JOIN Appointments ap ON v.vet_id = ap.vet_id
+JOIN Prescriptions pr ON ap.appointment_id = pr.appointment_id
+GROUP BY v.vet_id, v.full_name
+HAVING COUNT(ap.appointment_id) >= 1; 
+5.  IN, ALL
+5.1. Использование IN (владельцы, у которых есть собаки)
+SELECT full_name AS Владелец
+FROM Owners
+WHERE owner_id IN (
+    SELECT owner_id 
+    FROM Animals 
+    WHERE species_id = (SELECT species_id FROM Species WHERE species_name = 'Собака')
+);
+
+5.2. Использование ALL (животные, которые старше всех кошек в базе)
+SELECT name AS Кличка, birth_date AS Дата_рождения
+FROM Animals
+WHERE birth_date < ALL (
+    SELECT birth_date 
+    FROM Animals 
+    WHERE species_id = (SELECT species_id FROM Species WHERE species_name = 'Кошка')
+);
+
+6. IF, CASE
+6.1. Использование CASE (возрастные категории)
+SELECT 
+    name AS Кличка, 
+    birth_date AS Дата_рождения,
+    CASE 
+        WHEN birth_date > '2022-01-01' THEN 'Молодое'
+        WHEN birth_date > '2019-01-01' THEN 'Взрослое'
+        ELSE 'Пожилое'
+    END AS Возрастная_категория
+FROM Animals;
+
+6.2. Использование IF (скидка на препараты)
+SELECT 
+    appointment_id AS Код_приема,
+    medication_id AS Код_препарата,
+    quantity AS Количество,
+    price AS Базовая_цена,
+    IF(quantity > 2, price * quantity * 0.9, price * quantity) AS Итоговая_стоимость
+FROM Prescriptions;
+7.  
+7.1. Создание постоянного представления (View)
+CREATE VIEW View_Appointments_Full AS
+SELECT 
+    ap.appointment_id, 
+    ap.appointment_datetime, 
+    a.name AS animal_name, 
+    v.full_name AS vet_name, 
+    ap.diagnosis
+FROM Appointments ap
+JOIN Animals a ON ap.animal_id = a.animal_id
+JOIN Vets v ON ap.vet_id = v.vet_id;
+
+SELECT * FROM View_Appointments_Full;
+
+7.2. Временное представление (WITH / CTE)
+Считаем, сколько каждый владелец потратил на лекарства
+WITH OwnerSpending AS (
+    SELECT 
+        o.full_name AS Владелец, 
+        SUM(p.price * p.quantity) AS Сумма_трат
+    FROM Owners o
+    JOIN Animals a ON o.owner_id = a.owner_id
+    JOIN Appointments ap ON a.animal_id = ap.animal_id
+    JOIN Prescriptions p ON ap.appointment_id = p.appointment_id
+    GROUP BY o.full_name
+)
+SELECT * FROM OwnerSpending ORDER BY Сумма_трат DESC;
+8. Explain, CREATE INDEX
+8.1. Смотрим план запроса ДО индекса (type будет ALL - полный перебор)
+EXPLAIN SELECT * FROM Owners WHERE phone = '(999) 111-1111';
+
+8.2. Создаем индекс на поле phone
+CREATE INDEX idx_owners_phone ON Owners(phone);
+
+8.3. Смотрим план запроса ПОСЛЕ индекса (type станет ref - поиск по индексу)
+EXPLAIN SELECT * FROM Owners WHERE phone = '(999) 111-1111';
+9. Start transaction
+START TRANSACTION;
+
+1. Добавляем новый приём
+INSERT INTO Appointments (appointment_datetime, animal_id, vet_id, complaints, diagnosis, treatment) 
+VALUES ('2026-11-03 15:00:00', 1, 1, 'Плановый осмотр', 'Здоров', 'Витамины');
+
+Запоминаем ID только что созданного приёма
+SET @last_app_id = LAST_INSERT_ID();
+
+2. Выписываем препарат на этот приём
+INSERT INTO Prescriptions (appointment_id, medication_id, quantity, price) 
+VALUES (@last_app_id, 2, 1, 180.00);
+10. Prepare/execute/deallocated
+1. Подготавливаем запрос с параметром (знаком ?)
+PREPARE GetAnimalsBySpecies FROM 'SELECT name, birth_date FROM Animals WHERE species_id = ?';
+
+2. Задаем значение для параметра (2 — Кошки)
+SET @species_param = 2;
+
+3. Выполняем запрос с заданным параметром
+EXECUTE GetAnimalsBySpecies USING @species_param;
+
+4. Уничтожаем подготовленный запрос (освобождаем память)
+DEALLOCATE PREPARE GetAnimalsBySpecies;
